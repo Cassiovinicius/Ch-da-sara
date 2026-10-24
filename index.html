@@ -1,64 +1,318 @@
-<script>
-  // Cole aqui o link /exec da sua implantação, sem o parâmetro
-  const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycby7NQBzyfcAEYeYkV1LfgcVatzGJBp6tqQPR0GnnwhgaVZOdCMaL8uzi-IOSNt9E_-n/exec';
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chá de Fraldas da Sara</title>
 
-  function abrirFormulario() {
-    document.getElementById('painel').classList.add('aberto');
-    document.getElementById('nome').focus();
-  }
-
-  function fecharFormulario() {
-    document.getElementById('painel').classList.remove('aberto');
-  }
-
-  document.getElementById('painel').addEventListener('click', function (e) {
-    if (e.target === this) fecharFormulario();
-  });
-
-  document.getElementById('formPresenca').addEventListener('submit', function (e) {
-    e.preventDefault();
-
-    const nome = document.getElementById('nome').value.trim();
-    const botao = document.getElementById('enviar');
-    const mensagem = document.getElementById('mensagem');
-
-    if (nome.length < 2) {
-      mensagem.textContent = 'Digite seu nome para continuar.';
-      return;
+  <style>
+    :root {
+      --rosa: #e94f7b;
+      --rosa-claro: #fff0f5;
+      --marrom: #613b35;
+      --creme: #fffaf5;
     }
 
-    botao.disabled = true;
-    botao.textContent = 'Registrando sua confirmação...';
-    mensagem.textContent = '';
+    * { box-sizing: border-box; }
 
-    const url = URL_APPS_SCRIPT + '?nome=' + encodeURIComponent(nome);
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      color: var(--marrom);
+      background: linear-gradient(#fff0e8, #ffe8ef);
+    }
 
-    fetch(url)
-      .then(function (r) { return r.json(); })
-      .then(function (resposta) {
-        if (!resposta || resposta.ok !== true) {
-          throw new Error(
-            (resposta && resposta.erro) || 'Não foi possível registrar. Tente novamente.'
-          );
-        }
+    .container {
+      width: min(100% - 24px, 620px);
+      margin: 0 auto;
+      padding: 20px 0 110px;
+      text-align: center;
+    }
 
-        document.getElementById('formPresenca').style.display = 'none';
+    .convite {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 18px;
+      box-shadow: 0 8px 25px #75413b20;
+    }
 
-        const titulo = document.createElement('h3');
-        titulo.textContent = 'Presença confirmada! 🎉';
+    .texto { margin: 22px 0; line-height: 1.6; }
 
-        const resultado = document.createElement('p');
-        resultado.textContent =
-          'Obrigado, ' + (resposta.nome || nome) +
-          '! Você ficou responsável pela fralda tamanho ' +
-          resposta.tamanho + '. 💗';
+    .links {
+      display: grid;
+      gap: 12px;
+      margin: 20px 0;
+    }
 
-        mensagem.replaceChildren(titulo, resultado);
-      })
-      .catch(function (erro) {
-        botao.disabled = false;
-        botao.textContent = 'Tentar novamente';
-        mensagem.textContent = erro.message;
-      });
-  });
-</script>
+    .link {
+      display: block;
+      padding: 14px;
+      background: white;
+      border: 1px solid #f1c4d1;
+      border-radius: 14px;
+      color: #963653;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .link:hover { background: var(--rosa-claro); }
+
+    .qr {
+      margin: 24px auto;
+      padding: 16px;
+      max-width: 280px;
+      background: white;
+      border-radius: 16px;
+    }
+
+    .qr img { display: block; width: 100%; height: auto; }
+    .qr p { font-size: 14px; }
+
+    .botao-flutuante {
+      position: fixed;
+      z-index: 10;
+      right: 18px;
+      bottom: 18px;
+      border: none;
+      border-radius: 50px;
+      padding: 17px 22px;
+      background: var(--rosa);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      box-shadow: 0 5px 18px #7b294540;
+      cursor: pointer;
+    }
+
+    .botao-flutuante:hover { filter: brightness(.95); }
+
+    .painel {
+      display: none;
+      position: fixed;
+      z-index: 20;
+      inset: 0;
+      overflow-y: auto;
+      padding: 20px;
+      background: #40202a88;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .painel.aberto { display: flex; }
+
+    .formulario {
+      width: 100%;
+      max-width: 420px;
+      padding: 26px;
+      background: var(--creme);
+      border-radius: 22px;
+      text-align: left;
+      box-shadow: 0 10px 40px #0002;
+    }
+
+    .formulario h2 { margin-top: 0; text-align: center; }
+
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #d9b7b7;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+
+    .acao {
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: var(--rosa);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .fechar {
+      background: #eee0e3;
+      color: var(--marrom);
+    }
+
+    #mensagem {
+      margin-top: 16px;
+      text-align: center;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 420px) {
+      .container {
+        width: min(100% - 16px, 620px);
+        padding-top: 10px;
+      }
+
+      .botao-flutuante {
+        right: 12px;
+        bottom: 12px;
+        padding: 15px 18px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+
+    <img
+      class="convite"
+      src="https://raw.githubusercontent.com/Cassiovinicius/Ch-da-sara/main/Convite%20Ch%C3%A1%20de%20Fraldas%20da%20Sara%20(1).png"
+      alt="Convite do Chá de Fraldas da Sara"
+      onerror="this.alt='Não foi possível carregar a imagem do convite.'"
+    >
+
+    <section class="texto">
+      <h2>Vamos comemorar a chegada da Sara! 🎀</h2>
+      <p>
+        Sua presença é muito especial para nós.
+        Confirme e descubra qual tamanho de fralda você vai levar!
+      </p>
+    </section>
+
+    <nav class="links" aria-label="Links do evento">
+      <a class="link"
+         href="https://maps.app.goo.gl/SjpNPYDkL5pDvjPw8?g_st=ac"
+         target="_blank" rel="noopener">
+        📍 Abrir localização no Google Maps
+      </a>
+
+      <a class="link"
+         href="https://waze.com/ul?q=Rua%20do%20Registro%2C%2028%2C%20Vila%20Magdalena%2C%20Contagem%2C%20MG&navigate=yes"
+         target="_blank" rel="noopener">
+        🚗 Traçar rota pelo Waze
+      </a>
+
+      <a class="link"
+         href="https://www.instagram.com/cantinho_festas_contagem/"
+         target="_blank" rel="noopener">
+        📸 Conheça o espaço no Instagram
+      </a>
+    </nav>
+
+    <section class="qr">
+      <h3>Como chegar 📍</h3>
+      <img
+        src="https://quickchart.io/qr?text=https%3A%2F%2Fmaps.app.goo.gl%2FSjpNPYDkL5pDvjPw8%3Fg_st%3Dac&size=250&margin=2"
+        alt="QR Code para abrir a localização no Google Maps">
+      <p>Aponte a câmera do celular para abrir a localização.</p>
+    </section>
+
+    <p>Esperamos você! 💗</p>
+  </main>
+
+  <button class="botao-flutuante" type="button" onclick="abrirFormulario()">
+    💗 Confirmar presença
+  </button>
+
+  <section class="painel" id="painel" role="dialog"
+           aria-modal="true" aria-labelledby="tituloFormulario">
+    <div class="formulario">
+      <h2 id="tituloFormulario">Confirme sua presença 🎁</h2>
+
+      <form id="formPresenca">
+        <label for="nome">Seu nome completo</label>
+        <input
+          id="nome"
+          name="nome"
+          type="text"
+          minlength="2"
+          maxlength="80"
+          autocomplete="name"
+          required
+          placeholder="Digite seu nome">
+
+        <button class="acao" id="enviar" type="submit">
+          Confirmar e sortear minha fralda
+        </button>
+      </form>
+
+      <div id="mensagem" role="status" aria-live="polite"></div>
+
+      <button class="acao fechar" type="button" onclick="fecharFormulario()">
+        Fechar
+      </button>
+    </div>
+  </section>
+
+  <script>
+    const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycby7NQBzyfcAEYeYkV1LfgcVatzGJBp6tqQPR0GnnwhgaVZOdCMaL8uzi-IOSNt9E_-n/exec';
+
+    function abrirFormulario() {
+      document.getElementById('painel').classList.add('aberto');
+      document.getElementById('nome').focus();
+    }
+
+    function fecharFormulario() {
+      document.getElementById('painel').classList.remove('aberto');
+    }
+
+    document.getElementById('painel').addEventListener('click', function (e) {
+      if (e.target === this) fecharFormulario();
+    });
+
+    document.getElementById('formPresenca').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const nome = document.getElementById('nome').value.trim();
+      const botao = document.getElementById('enviar');
+      const mensagem = document.getElementById('mensagem');
+
+      if (nome.length < 2) {
+        mensagem.textContent = 'Digite seu nome para continuar.';
+        return;
+      }
+
+      botao.disabled = true;
+      botao.textContent = 'Registrando sua confirmação...';
+      mensagem.textContent = '';
+
+      const url = URL_APPS_SCRIPT + '?nome=' + encodeURIComponent(nome);
+
+      fetch(url)
+        .then(function (r) { return r.json(); })
+        .then(function (resposta) {
+          if (!resposta || resposta.ok !== true) {
+            throw new Error(
+              (resposta && resposta.erro) || 'Não foi possível registrar. Tente novamente.'
+            );
+          }
+
+          document.getElementById('formPresenca').style.display = 'none';
+
+          const titulo = document.createElement('h3');
+          titulo.textContent = 'Presença confirmada! 🎉';
+
+          const resultado = document.createElement('p');
+          resultado.textContent =
+            'Obrigado, ' + (resposta.nome || nome) +
+            '! Você ficou responsável pela fralda tamanho ' +
+            resposta.tamanho + '. 💗';
+
+          mensagem.replaceChildren(titulo, resultado);
+        })
+        .catch(function (erro) {
+          botao.disabled = false;
+          botao.textContent = 'Tentar novamente';
+          mensagem.textContent = erro.message;
+        });
+    });
+  </script>
+</body>
+</html>
