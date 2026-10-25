@@ -141,6 +141,8 @@
       cursor: pointer;
     }
 
+    .acao:disabled { opacity: .6; cursor: wait; }
+
     .fechar {
       background: #eee0e3;
       color: var(--marrom);
@@ -253,6 +255,7 @@
 
   <script>
     const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycby7NQBzyfcAEYeYkV1LfgcVatzGJBp6tqQPR0GnnwhgaVZOdCMaL8uzi-IOSNt9E_-n/exec';
+    const URL_CONVITE = 'https://raw.githubusercontent.com/Cassiovinicius/Ch-da-sara/main/convite2.png';
 
     function abrirFormulario() {
       document.getElementById('painel').classList.add('aberto');
@@ -266,6 +269,65 @@
     document.getElementById('painel').addEventListener('click', function (e) {
       if (e.target === this) fecharFormulario();
     });
+
+    // Gera o convite em PNG com nome e tamanho da fralda e inicia o download
+    function gerarConvite(nome, tamanho, botao) {
+      botao.disabled = true;
+      botao.textContent = 'Gerando convite...';
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+
+      img.onload = function () {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        const w = canvas.width;
+        const h = canvas.height;
+
+        // Caixa na parte de baixo da imagem para escrever os dados
+        const caixaH = h * 0.16;
+        const caixaY = h - caixaH - h * 0.03;
+        ctx.fillStyle = 'rgba(255, 250, 245, 0.92)';
+        ctx.beginPath();
+        ctx.roundRect(w * 0.08, caixaY, w * 0.84, caixaH, w * 0.03);
+        ctx.fill();
+
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#613b35';
+        ctx.font = 'bold ' + Math.round(w * 0.055) + 'px Arial';
+        ctx.fillText(nome, w / 2, caixaY + caixaH * 0.42);
+
+        ctx.fillStyle = '#e94f7b';
+        ctx.font = Math.round(w * 0.045) + 'px Arial';
+        ctx.fillText('Fralda tamanho ' + tamanho, w / 2, caixaY + caixaH * 0.78);
+
+        canvas.toBlob(function (blob) {
+          const link = document.createElement('a');
+          const nomeArquivo = nome.toLowerCase().normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'convite-cha-sara-' + nomeArquivo + '.png';
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+
+          botao.disabled = false;
+          botao.textContent = '📥 Baixar meu convite';
+        }, 'image/png');
+      };
+
+      img.onerror = function () {
+        botao.disabled = false;
+        botao.textContent = 'Tentar novamente';
+        alert('Não foi possível carregar o convite. Tente novamente em instantes.');
+      };
+
+      img.src = URL_CONVITE;
+    }
 
     document.getElementById('formPresenca').addEventListener('submit', function (e) {
       e.preventDefault();
@@ -300,12 +362,21 @@
           titulo.textContent = 'Presença confirmada! 🎉';
 
           const resultado = document.createElement('p');
+          const nomeConfirmado = resposta.nome || nome;
           resultado.textContent =
-            'Obrigado, ' + (resposta.nome || nome) +
+            'Obrigado, ' + nomeConfirmado +
             '! Você ficou responsável pela fralda tamanho ' +
             resposta.tamanho + '. 💗';
 
-          mensagem.replaceChildren(titulo, resultado);
+          const botaoBaixar = document.createElement('button');
+          botaoBaixar.type = 'button';
+          botaoBaixar.className = 'acao';
+          botaoBaixar.textContent = '📥 Baixar meu convite';
+          botaoBaixar.onclick = function () {
+            gerarConvite(nomeConfirmado, resposta.tamanho, botaoBaixar);
+          };
+
+          mensagem.replaceChildren(titulo, resultado, botaoBaixar);
         })
         .catch(function (erro) {
           botao.disabled = false;
